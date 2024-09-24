@@ -1,0 +1,225 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Chat APP</title>
+    <style>
+      * {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+        font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+      }
+
+      body {
+        background: linear-gradient(135deg, #f8cdda 0%, #1d2b64 100%);
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        height: 100vh;
+      }
+
+      #chat-container {
+        width: 400px;
+        max-width: 90%;
+        background-color: #ffffff;
+        border-radius: 10px;
+        box-shadow: 0px 4px 20px rgba(0, 0, 0, 0.15);
+        display: flex;
+        flex-direction: column;
+        overflow: hidden;
+      }
+
+      h1 {
+        background-color: #ff6b6b;
+        color: white;
+        text-align: center;
+        padding: 20px 0;
+        font-size: 24px;
+      }
+
+      #messages {
+        padding: 20px;
+        flex: 1;
+        overflow-y: auto;
+        background-color: #f0f4f8;
+      }
+
+      .message {
+        margin: 10px 0;
+        padding: 10px 15px;
+        border-radius: 20px;
+        max-width: 80%;
+        word-wrap: break-word;
+        clear: both; /* Clear floats */
+        font-size: 16px;
+      }
+
+      .message.user1 {
+        background-color: #6be58e; /* Light Green */
+        margin-left: auto; /* Align to the right */
+        color: #2c2c2c;
+      }
+
+      .message.user2 {
+        background-color: #ffb74d; /* Light Orange */
+        margin-right: auto; /* Align to the left */
+        color: #2c2c2c;
+      }
+
+      #input-container {
+        display: flex;
+        border-top: 1px solid #ddd;
+        padding: 10px;
+        background-color: #65a2c9;
+      }
+
+      #message {
+        flex: 1;
+        padding: 10px;
+        border: 1px solid #ccc;
+        border-radius: 20px;
+        font-size: 16px;
+        margin-right: 10px;
+        transition: border-color 0.3s;
+      }
+
+      #message:focus {
+        border-color: #ff6b6b; /* Focus border color */
+        outline: none;
+      }
+
+      #sendBtn {
+        padding: 10px 15px;
+        background-color: #ff6b6b;
+        color: white;
+        border: none;
+        border-radius: 20px;
+        cursor: pointer;
+        font-size: 16px;
+        transition: background-color 0.3s ease;
+      }
+
+      #sendBtn:hover {
+        background-color: #ff4f4f;
+      }
+
+      #username-container {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        height: 100%;
+        width: 100%;
+      }
+
+      #username {
+        padding: 10px;
+        border: 1px solid #ccc;
+        border-radius: 20px;
+        font-size: 16px;
+        margin-bottom: 10px;
+        width: 80%;
+        transition: border-color 0.3s;
+      }
+
+      #username:focus {
+        border-color: #ff6b6b; /* Focus border color */
+        outline: none;
+      }
+
+      #setNameBtn {
+        padding: 10px 15px;
+        background-color: #ff6b6b;
+        color: white;
+        border: none;
+        border-radius: 20px;
+        cursor: pointer;
+        font-size: 16px;
+        transition: background-color 0.3s ease;
+      }
+
+      #setNameBtn:hover {
+        background-color: #ff4f4f;
+      }
+
+      #chatArea {
+        display: none; /* Initially hide chat area */
+      }
+    </style>
+  </head>
+  <body>
+    <div id="chat-container">
+      <h1>Chat App</h1>
+
+      <div id="username-container">
+        <input type="text" id="username" placeholder="Enter your username" />
+        <button id="setNameBtn">Set Name</button>
+      </div>
+
+      <div id="chatArea">
+        <div id="messages"></div>
+        <div id="input-container">
+          <input
+            type="text"
+            id="message"
+            placeholder="Enter your message here..."
+          />
+          <button id="sendBtn">Send</button>
+        </div>
+      </div>
+    </div>
+
+    <script src="/socket.io/socket.io.js"></script>
+    <script>
+      const socket = io();
+      const setNameBtn = document.getElementById("setNameBtn");
+      const usernameInput = document.getElementById("username");
+      const chatArea = document.getElementById("chatArea");
+      const sendBtn = document.getElementById("sendBtn");
+      const messageInput = document.getElementById("message");
+      const allMessages = document.getElementById("messages");
+
+      let username = "";
+
+      // Set the username and show the chat area
+      setNameBtn.addEventListener("click", () => {
+        username = usernameInput.value.trim();
+        if (username !== "") {
+          usernameInput.value = ""; // Clear input
+          document.getElementById("username-container").style.display = "none"; // Hide username input
+          chatArea.style.display = "block"; // Show chat area
+        }
+      });
+
+      // Listen for incoming messages from the server
+      socket.on("message", (data) => {
+        const p = document.createElement("p");
+        p.classList.add(
+          "message",
+          data.username === username ? "user1" : "user2"
+        );
+        p.innerText = `${data.username}: ${data.message}`;
+        allMessages.appendChild(p);
+        allMessages.scrollTop = allMessages.scrollHeight; // Scroll to the latest message
+      });
+
+      // Send a message
+      sendBtn.addEventListener("click", () => {
+        const message = messageInput.value;
+        if (message.trim() !== "") {
+          socket.emit("user-message", { username, message });
+          messageInput.value = ""; // Clear the input field after sending
+        }
+      });
+
+      // Enable sending messages with Enter key
+      messageInput.addEventListener("keydown", (e) => {
+        if (e.key === "Enter") {
+          sendBtn.click();
+        }
+      });
+    </script>
+  </body>
+</html>
